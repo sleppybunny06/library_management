@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../lib/apiErrors.js";
 
 export default function Books() {
   const [books, setBooks] = useState<any[]>([]);
@@ -20,9 +21,13 @@ export default function Books() {
     try {
       setLoading(true);
       const { data } = await axios.get("/api/books");
+      if (!Array.isArray(data)) {
+        throw new Error("The book service returned an invalid response.");
+      }
       setBooks(data);
     } catch (err) {
-      toast.error("Failed to fetch books");
+      setBooks([]);
+      toast.error(getApiErrorMessage(err, "Failed to fetch books"));
     } finally {
       setLoading(false);
     }
@@ -43,7 +48,7 @@ export default function Books() {
       setFormData({ title: '', author: '', isbn: '', category: '', quantity: 1, availableQuantity: 1 });
       setEditId(null);
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "An error occurred");
+      toast.error(getApiErrorMessage(err, "An error occurred"));
     }
   };
 
@@ -54,7 +59,7 @@ export default function Books() {
         toast.success("Book deleted!");
         fetchBooks();
       } catch (err: any) {
-        toast.error(err.response?.data?.error || "Failed to delete");
+        toast.error(getApiErrorMessage(err, "Failed to delete"));
       }
     }
   };

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { AlertTriangle, TrendingUp, Download } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../lib/apiErrors.js";
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('overdue');
@@ -17,9 +18,13 @@ export default function Reports() {
       setLoading(true);
       const endpoint = tab === 'overdue' ? "/api/reports/overdue" : "/api/reports/most-borrowed";
       const res = await axios.get(endpoint);
+      if (!Array.isArray(res.data)) {
+        throw new Error("The report service returned an invalid response.");
+      }
       setData(res.data);
     } catch (err) {
-      toast.error("Failed to load report data");
+      setData([]);
+      toast.error(getApiErrorMessage(err, "Failed to load report data"));
     } finally {
       setLoading(false);
     }
