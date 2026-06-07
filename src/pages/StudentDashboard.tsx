@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Search, Book as BookIcon } from "lucide-react";
+import { Search, Book as BookIcon, RefreshCw, TriangleAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface BookData {
@@ -14,30 +14,63 @@ interface BookData {
   description?: string;
 }
 
+function isBookData(value: unknown): value is BookData {
+  if (!value || typeof value !== "object") return false;
+
+  const book = value as Record<string, unknown>;
+  return typeof book.title === "string"
+    && typeof book.author === "string"
+    && typeof book.isbn === "string"
+    && typeof book.category === "string"
+    && typeof book.quantity === "number"
+    && typeof book.availableQuantity === "number";
+}
+
 export default function StudentDashboard() {
   const [books, setBooks] = useState<BookData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchBooks();
   }, []);
 
   const fetchBooks = async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      const { data } = await axios.get("/api/books");
+      const { data } = await axios.get<unknown>("/api/books");
+
+      // Some static hosts serve index.html for unknown /api routes. Do not put
+      // that response into state: it would make books.filter throw and blank
+      // the entire application.
+      if (!Array.isArray(data) || !data.every(isBookData)) {
+        throw new Error("The catalog service returned an invalid response.");
+      }
+
       setBooks(data);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to load catalog");
+    } catch (err: unknown) {
+      const message = axios.isAxiosError<{ error?: string }>(err)
+        ? err.response?.data?.error || "The catalog service is currently unavailable."
+        : err instanceof Error
+          ? err.message
+          : "Failed to load catalog.";
+
+      setBooks([]);
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredBooks = books.filter(b => 
-    b.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredBooks = books.filter((book) =>
+    [book.title, book.author, book.category].some((value) =>
+      value?.toLowerCase().includes(normalizedSearchTerm)
+    )
   );
 
   return (
@@ -63,6 +96,22 @@ export default function StudentDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {loading ? (
           <div className="col-span-full py-12 text-center text-slate-500">Loading catalog...</div>
+        ) : error ? (
+          <div className="col-span-full py-12 px-6 text-center flex flex-col items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center mb-3">
+              <TriangleAlert className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <p className="text-slate-900 dark:text-white font-semibold">Unable to load the library catalog</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md">{error}</p>
+            <button
+              type="button"
+              onClick={fetchBooks}
+              className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white transition-colors font-medium text-sm rounded-lg"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try again
+            </button>
+          </div>
         ) : filteredBooks.length === 0 ? (
           <div className="col-span-full py-12 text-center flex flex-col items-center justify-center">
             <BookIcon className="w-12 h-12 text-slate-300 mb-3" />
