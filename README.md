@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Library Management System
 
-# Run and deploy your AI Studio app
+A full-stack library management application for managing books, students, issue records, returns, and reports.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/fc119a8e-a798-4258-9ebe-514beb9d6379
+- Role-based dashboards for administrators, librarians, and students
+- Book and student management
+- Book issue and return tracking
+- Library reports and activity summaries
+- MongoDB-backed persistence with a local in-memory fallback
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+2. Copy the environment template and configure your MongoDB connection:
+   ```bash
+   cp .env.example .env.local
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+The application is available at `http://localhost:3000`.
+
+## Available Scripts
+
+- `npm run dev` — start the development server
+- `npm run build` — build the client and server for production
+- `npm start` — run the production build
+- `npm run lint` — run TypeScript checks
+- `npm run clean` — remove generated build output

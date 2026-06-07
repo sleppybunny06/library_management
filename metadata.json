@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Library Management System",
+  "description": "Manage library books, students, issue records, returns, and reports.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
