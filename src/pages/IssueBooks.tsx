@@ -95,6 +95,7 @@ export default function IssueBooks() {
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Due Date</label>
             <input 
               type="date"
+              min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
               required
               value={formData.dueDate}
               onChange={(e) => setFormData({...formData, dueDate: e.target.value})}

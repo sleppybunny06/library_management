@@ -8,7 +8,7 @@ const bookSchema = new mongoose.Schema({
   publisher: { type: String },
   publishedYear: { type: Number },
   quantity: { type: Number, required: true, min: 0 },
-  availableQuantity: { type: Number, required: true, min: 0 },
+  availableQuantity: { type: Number, required: true, min: 0, validate: { validator(this: any, value: number) { return value <= this.quantity; }, message: "Available quantity cannot exceed total quantity" } },
   rackNumber: { type: String },
   description: { type: String },
   coverImage: { type: String, default: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=600&auto=format&fit=crop" }

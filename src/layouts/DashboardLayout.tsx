@@ -12,7 +12,7 @@ export default function DashboardLayout() {
     const userRole = localStorage.getItem("authRole");
     if (!userRole && location.pathname !== "/login") {
       navigate("/login");
-    } else if (userRole === "student" && location.pathname !== "/student-dashboard" && location.pathname !== "/settings") {
+    } else if (userRole === "student" && location.pathname !== "/student-dashboard") {
       navigate("/student-dashboard");
     }
   }, [navigate, location]);

@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import IssueRecord from "../models/IssueRecord.js";
 import Book from "../models/Book.js";
+import Student from "../models/Student.js";
 
-export const getIssues = async (req: Request, res: Response) => {
+export const getIssues = async (_req: Request, res: Response) => {
   try {
     const issues = await IssueRecord.find()
       .populate("studentId")
@@ -15,55 +16,68 @@ export const getIssues = async (req: Request, res: Response) => {
 };
 
 export const issueBook = async (req: Request, res: Response) => {
+  let reservedBook: any = null;
   try {
     const { studentId, bookId, dueDate } = req.body;
+    const parsedDueDate = new Date(dueDate);
+    if (!studentId || !bookId || !dueDate || Number.isNaN(parsedDueDate.getTime())) {
+      return res.status(400).json({ error: "Student, book, and a valid due date are required" });
+    }
+    if (parsedDueDate <= new Date()) {
+      return res.status(400).json({ error: "Due date must be in the future" });
+    }
 
-    const book = await Book.findById(bookId);
-    if (!book) return res.status(404).json({ error: "Book not found" });
-    if (book.availableQuantity <= 0) return res.status(400).json({ error: "Book not available" });
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ error: "Student not found" });
 
-    const newIssue = new IssueRecord({
-      studentId,
-      bookId,
-      dueDate,
-      status: "ISSUED"
-    });
+    const existingIssue = await IssueRecord.exists({ studentId, bookId, status: "ISSUED" });
+    if (existingIssue) return res.status(409).json({ error: "This student already has an active issue for this book" });
 
-    await newIssue.save();
+    reservedBook = await Book.findOneAndUpdate(
+      { _id: bookId, availableQuantity: { $gt: 0 } },
+      { $inc: { availableQuantity: -1 } },
+      { returnDocument: "after" },
+    );
+    if (!reservedBook) {
+      const exists = await Book.exists({ _id: bookId });
+      return res.status(exists ? 409 : 404).json({ error: exists ? "Book not available" : "Book not found" });
+    }
 
-    // Decrease available quantity
-    book.availableQuantity -= 1;
-    await book.save();
-
+    const newIssue = await IssueRecord.create({ studentId, bookId, dueDate: parsedDueDate, status: "ISSUED" });
+    await newIssue.populate(["studentId", "bookId"]);
     res.status(201).json(newIssue);
   } catch (err: any) {
+    if (reservedBook) await Book.updateOne({ _id: reservedBook._id }, { $inc: { availableQuantity: 1 } });
+    if (err?.code === 11000) return res.status(409).json({ error: "This student already has an active issue for this book" });
     res.status(400).json({ error: err.message });
   }
 };
 
 export const returnBook = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const issue = await IssueRecord.findById(id).populate("bookId");
-    if (!issue) return res.status(404).json({ error: "Issue record not found" });
-    if (issue.status === "RETURNED") return res.status(400).json({ error: "Book already returned" });
+    const returnDate = new Date();
+    const issue = await IssueRecord.findOneAndUpdate(
+      { _id: req.params.id, status: "ISSUED" },
+      [{
+        $set: {
+          returnDate,
+          status: "RETURNED",
+          fine: { $multiply: [5, { $max: [0, { $floor: { $divide: [{ $subtract: [returnDate, "$dueDate"] }, 86_400_000] } }] }] },
+        },
+      }],
+      { returnDocument: "after", updatePipeline: true },
+    );
 
-    issue.returnDate = new Date();
-    issue.status = "RETURNED";
-
-    // Calculate fine: ₹5 x Late Days
-    const lateDays = Math.max(0, Math.floor((issue.returnDate.getTime() - issue.dueDate.getTime()) / (1000 * 60 * 60 * 24)));
-    issue.fine = lateDays * 5;
-
-    await issue.save();
-
-    // Increase available quantity
-    const book = await Book.findById(issue.bookId);
-    if (book) {
-      book.availableQuantity += 1;
-      await book.save();
+    if (!issue) {
+      const exists = await IssueRecord.exists({ _id: req.params.id });
+      return res.status(exists ? 409 : 404).json({ error: exists ? "Book already returned" : "Issue record not found" });
     }
 
+    await Book.updateOne(
+      { _id: issue.bookId, $expr: { $lt: ["$availableQuantity", "$quantity"] } },
+      { $inc: { availableQuantity: 1 } },
+    );
+    await issue.populate(["studentId", "bookId"]);
     res.json(issue);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
