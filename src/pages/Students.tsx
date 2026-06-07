@@ -52,8 +52,8 @@ export default function Students() {
         await axios.delete(`/api/students/${id}`);
         toast.success("Student deleted!");
         fetchStudents();
-      } catch (err) {
-        toast.error("Failed to delete");
+      } catch (err: any) {
+        toast.error(err.response?.data?.error || "Failed to delete");
       }
     }
   };

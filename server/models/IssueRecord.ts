@@ -10,5 +10,10 @@ const issueRecordSchema = new mongoose.Schema({
   fine: { type: Number, default: 0 }
 }, { timestamps: true });
 
+issueRecordSchema.index(
+  { studentId: 1, bookId: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: "ISSUED" } },
+);
+
 const IssueRecord = mongoose.models.IssueRecord || mongoose.model("IssueRecord", issueRecordSchema);
 export default IssueRecord as any;

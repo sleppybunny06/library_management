@@ -53,8 +53,8 @@ export default function Books() {
         await axios.delete(`/api/books/${id}`);
         toast.success("Book deleted!");
         fetchBooks();
-      } catch (err) {
-        toast.error("Failed to delete");
+      } catch (err: any) {
+        toast.error(err.response?.data?.error || "Failed to delete");
       }
     }
   };

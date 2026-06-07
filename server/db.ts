@@ -19,6 +19,7 @@ export async function connectDB() {
     await seedDB();
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error);
+    throw error;
   }
 }
 

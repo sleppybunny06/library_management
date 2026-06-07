@@ -5,9 +5,9 @@ import IssueRecord from "../models/IssueRecord.js";
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    const totalBooks = await Book.countDocuments();
-    const availableBooksAggregate = await Book.aggregate([{ $group: { _id: null, total: { $sum: "$availableQuantity" } } }]);
-    const availableBooks = availableBooksAggregate[0]?.total || 0;
+    const inventory = await Book.aggregate([{ $group: { _id: null, total: { $sum: "$quantity" }, available: { $sum: "$availableQuantity" } } }]);
+    const totalBooks = inventory[0]?.total || 0;
+    const availableBooks = inventory[0]?.available || 0;
     
     const issuedBooksCount = await IssueRecord.countDocuments({ status: "ISSUED" });
     const overdueBooksCount = await IssueRecord.countDocuments({ 
@@ -16,15 +16,20 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     });
     const registeredStudents = await Student.countDocuments();
 
-    // Chart Data (Mock trend)
-    const monthlyIssueTrend = [
-        { name: 'Jan', issues: 40 },
-        { name: 'Feb', issues: 55 },
-        { name: 'Mar', issues: 35 },
-        { name: 'Apr', issues: 70 },
-        { name: 'May', issues: 45 },
-        { name: 'Jun', issues: 60 }
-    ];
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    monthStart.setUTCMonth(monthStart.getUTCMonth() - 5);
+    const issueTrend = await IssueRecord.aggregate([
+      { $match: { issueDate: { $gte: monthStart } } },
+      { $group: { _id: { year: { $year: "$issueDate" }, month: { $month: "$issueDate" } }, issues: { $sum: 1 } } },
+    ]);
+    const monthlyIssueTrend = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(monthStart);
+      date.setUTCMonth(monthStart.getUTCMonth() + index);
+      const match = issueTrend.find(item => item._id.year === date.getUTCFullYear() && item._id.month === date.getUTCMonth() + 1);
+      return { name: date.toLocaleString("en-US", { month: "short", timeZone: "UTC" }), issues: match?.issues || 0 };
+    });
 
     // Books by category
     const categoryDist = await Book.aggregate([
