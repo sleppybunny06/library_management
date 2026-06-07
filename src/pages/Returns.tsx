@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Undo2, Search, IndianRupee } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../lib/apiErrors.js";
 
 export default function Returns() {
   const [issues, setIssues] = useState<any[]>([]);
@@ -16,9 +17,13 @@ export default function Returns() {
     try {
       setLoading(true);
       const { data } = await axios.get("/api/issues");
+      if (!Array.isArray(data)) {
+        throw new Error("The returns service returned an invalid response.");
+      }
       setIssues(data.filter((i: any) => i.status === "ISSUED")); // Only show active issues
     } catch (err) {
-      toast.error("Failed to load active issues");
+      setIssues([]);
+      toast.error(getApiErrorMessage(err, "Failed to load active issues"));
     } finally {
       setLoading(false);
     }
@@ -36,7 +41,7 @@ export default function Returns() {
         }
         fetchIssues();
       } catch (err: any) {
-        toast.error(err.response?.data?.error || "Failed to process return");
+        toast.error(getApiErrorMessage(err, "Failed to process return"));
       }
     }
   };

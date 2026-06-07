@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { BookOpen } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../lib/apiErrors.js";
 
 export default function IssueBooks() {
   const [books, setBooks] = useState<any[]>([]);
@@ -25,10 +26,15 @@ export default function IssueBooks() {
         axios.get("/api/books"),
         axios.get("/api/students")
       ]);
+      if (!Array.isArray(booksRes.data) || !Array.isArray(studentsRes.data)) {
+        throw new Error("The issue form service returned an invalid response.");
+      }
       setBooks(booksRes.data.filter((b: any) => b.availableQuantity > 0));
       setStudents(studentsRes.data);
     } catch (err) {
-      toast.error("Failed to load data");
+      setBooks([]);
+      setStudents([]);
+      toast.error(getApiErrorMessage(err, "Failed to load data"));
     } finally {
       setLoading(false);
     }
@@ -42,7 +48,7 @@ export default function IssueBooks() {
       setFormData({ studentId: '', bookId: '', dueDate: formData.dueDate });
       fetchData(); // Refresh available quantity
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to issue book");
+      toast.error(getApiErrorMessage(err, "Failed to issue book"));
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Search, Book as BookIcon, RefreshCw, TriangleAlert } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../lib/apiErrors.js";
 
 interface BookData {
   _id?: string;
@@ -52,11 +53,7 @@ export default function StudentDashboard() {
 
       setBooks(data);
     } catch (err: unknown) {
-      const message = axios.isAxiosError<{ error?: string }>(err)
-        ? err.response?.data?.error || "The catalog service is currently unavailable."
-        : err instanceof Error
-          ? err.message
-          : "Failed to load catalog.";
+      const message = getApiErrorMessage(err, "The catalog service is currently unavailable.");
 
       setBooks([]);
       setError(message);
