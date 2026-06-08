@@ -6,7 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { createApp } from "./server/app.js";
 import { connectDB } from "./server/db.js";
 
-dotenv.config();
+dotenv.config({ path: [".env.local", ".env"] });
 
 const app = createApp();
 const PORT = Number(process.env.PORT) || 3000;

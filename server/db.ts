@@ -33,6 +33,10 @@ async function connectAndSeed() {
       console.log(`✅ Started in-memory MongoDB at ${mongoURI}`);
     }
 
+    if (/[<>]/.test(mongoURI)) {
+      throw new Error("MONGODB_URI still contains angle brackets. Remove placeholder characters and use the actual username/password values.");
+    }
+
     await mongoose.connect(mongoURI);
     console.log("✅ MongoDB Connected successfully");
     await seedDB();
