@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Book, CheckCircle, Users, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 import axios from "axios";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,10 +23,9 @@ export default function Dashboard() {
       setLoading(true);
       const { data } = await axios.get("/api/reports/dashboard");
       setStats(data);
-      setError("");
     } catch (err: any) {
-      console.error(err);
-      setError("Unable to load dashboard data. Assuming disconnected DB for demo.");
+      console.warn("Unable to load dashboard data; using empty dashboard fallback.", err);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -50,23 +48,8 @@ export default function Dashboard() {
   };
   const recentIssues = stats?.recentIssues || [];
 
-  const statCards = [
-    { label: "Total Books", value: summary.totalBooks, icon: Book, color: "bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400" },
-    { label: "Available Books", value: summary.availableBooks, icon: CheckCircle, color: "bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400" },
-    { label: "Issued Books", value: summary.issuedBooksCount, icon: ArrowRightLeft, color: "bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400" },
-    { label: "Overdue Books", value: summary.overdueBooksCount, icon: AlertTriangle, color: "bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400" },
-    { label: "Registered Students", value: summary.registeredStudents, icon: Users, color: "bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400" },
-  ];
-
   return (
     <div className="flex flex-col gap-6 shrink-0">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center gap-2">
-           <AlertTriangle className="w-5 h-5" />
-           {error}
-        </div>
-      )}
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 shrink-0">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
