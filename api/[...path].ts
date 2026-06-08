@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { createApp } from "../server/app.js";
 
-dotenv.config();
+dotenv.config({ path: [".env.local", ".env"] });
 
 const app = createApp({ connectOnRequest: true });
 

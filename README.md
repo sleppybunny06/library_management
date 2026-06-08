@@ -22,6 +22,7 @@ A full-stack library management application for managing books, students, issue 
    ```bash
    cp .env.example .env.local
    ```
+   Put your Atlas connection string in `.env.local` as `MONGODB_URI`. Do not include angle brackets around the username or password; for example, use `mongodb+srv://username:password@cluster.mongodb.net/libraryDB?...`, not `mongodb+srv://<username>:<password>@...`.
 3. Start the development server:
    ```bash
    npm run dev
