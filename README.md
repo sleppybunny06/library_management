@@ -29,6 +29,10 @@ A full-stack library management application for managing books, students, issue 
 
 The application is available at `http://localhost:3000`.
 
+## Deploy on Vercel
+
+The Vercel deployment uses the serverless API entrypoint in `api/[...path].ts` for every `/api/*` request and serves the Vite client from `dist`. Add a `MONGODB_URI` environment variable in the Vercel project settings before deploying so the catalog, students, issues, returns, and reports routes can connect to MongoDB.
+
 ## Available Scripts
 
 - `npm run dev` — start the development server
