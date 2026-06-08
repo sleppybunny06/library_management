@@ -2,18 +2,37 @@ import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import Book from "./models/Book.js";
 import Student from "./models/Student.js";
-import IssueRecord from "./models/IssueRecord.js";
+
+let connectionPromise: Promise<void> | undefined;
+let mongoServer: MongoMemoryServer | undefined;
+let seeded = false;
 
 export async function connectDB() {
+  if (mongoose.connection.readyState === 1) return;
+  if (connectionPromise) return connectionPromise;
+
+  connectionPromise = connectAndSeed().catch((error) => {
+    connectionPromise = undefined;
+    throw error;
+  });
+
+  return connectionPromise;
+}
+
+async function connectAndSeed() {
   try {
     let mongoURI = process.env.MONGODB_URI;
     if (!mongoURI) {
+      if (process.env.VERCEL) {
+        throw new Error("MONGODB_URI is not defined for the Vercel API deployment.");
+      }
+
       console.warn("⚠️ MONGODB_URI is not defined. Starting mongodb-memory-server instead.");
-      const mongoServer = await MongoMemoryServer.create();
+      mongoServer = await MongoMemoryServer.create();
       mongoURI = mongoServer.getUri();
       console.log(`✅ Started in-memory MongoDB at ${mongoURI}`);
     }
-    
+
     await mongoose.connect(mongoURI);
     console.log("✅ MongoDB Connected successfully");
     await seedDB();
@@ -24,6 +43,8 @@ export async function connectDB() {
 }
 
 async function seedDB() {
+  if (seeded) return;
+
   try {
     const bookCount = await Book.countDocuments();
     if (bookCount === 0) {
@@ -64,9 +85,9 @@ async function seedDB() {
       }));
       await Student.insertMany(studentsToInsert as any[]);
     }
+    seeded = true;
     console.log("✅ Database seeding check complete.");
   } catch (err) {
     console.error("❌ Seed Error: ", err);
   }
 }
-
